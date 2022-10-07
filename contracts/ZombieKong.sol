@@ -1,5 +1,25 @@
-// SPDX-License-Identifier: MIT
+/**
+ *Submitted for verification at Etherscan.io on 2022-10-06
+*/
 
+// SPDX-License-Identifier: MIT
+/*
+
+▒███████▒ ██ ▄█▀ ▒█████   ███▄    █   ▄████ 
+▒ ▒ ▒ ▄▀░ ██▄█▒ ▒██▒  ██▒ ██ ▀█   █  ██▒ ▀█▒
+░ ▒ ▄▀▒░ ▓███▄░ ▒██░  ██▒▓██  ▀█ ██▒▒██░▄▄▄░
+  ▄▀▒   ░▓██ █▄ ▒██   ██░▓██▒  ▐▌██▒░▓█  ██▓
+▒███████▒▒██▒ █▄░ ████▓▒░▒██░   ▓██░░▒▓███▀▒
+░▒▒ ▓░▒░▒▒ ▒▒ ▓▒░ ▒░▒░▒░ ░ ▒░   ▒ ▒  ░▒   ▒ 
+░░▒ ▒ ░ ▒░ ░▒ ▒░  ░ ▒ ▒░ ░ ░░   ░ ▒░  ░   ░ 
+░ ░ ░ ░ ░░ ░░ ░ ░ ░ ░ ▒     ░   ░ ░ ░ ░   ░ 
+  ░ ░    ░  ░       ░ ░           ░       ░ 
+░                                           
+
+    Zombie Kong (ZKONG)
+    https://zkongtoken.com
+
+*/
 pragma solidity 0.8.13;
 
 abstract contract Context {
@@ -396,6 +416,7 @@ contract ZombieKong is ERC20, Ownable {
 
     address public operationsAddress1;
     address public operationsAddress2;
+    address public operationsAddress3;
     address public lpReceiverAddress;
 
     uint256 public tradingActiveBlock = 0; // 0 means trading is not active
@@ -445,7 +466,7 @@ contract ZombieKong is ERC20, Ownable {
     event UpdatedMaxBuyAmount(uint256 newAmount);
     event UpdatedMaxSellAmount(uint256 newAmount);
     event UpdatedMaxWalletAmount(uint256 newAmount);
-    event UpdatedOperationsAddress(address indexed newWallet1, address indexed newWallet2);
+    event UpdatedOperationsAddress(address indexed newWallet1, address indexed newWallet2, address indexed newWallet3);
     event MaxTransactionExclusion(address _address, bool excluded);
     event OwnerForcedSwapBack(uint256 timestamp);
     event CaughtEarlyBuyer(address sniper);
@@ -478,15 +499,17 @@ contract ZombieKong is ERC20, Ownable {
         buyLiquidityFee = 4;
         buyTotalFees = buyOperationsFee + buyLiquidityFee;
 
-        originalOperationsFee = 4;
+        originalOperationsFee = 5;
         originalLiquidityFee = 1;
 
         sellOperationsFee = 6;
         sellLiquidityFee = 4;
         sellTotalFees = sellOperationsFee + sellLiquidityFee;
 
-        operationsAddress1 = address(0x446eB0CB35E310a987807519640c932A777dBaD5); //80%
-        operationsAddress2 = address(0x446eB0CB35E310a987807519640c932A777dBaD5); //20%
+        operationsAddress1 = address(0x446eB0CB35E310a987807519640c932A777dBaD5); //40%
+        operationsAddress2 = address(0x446eB0CB35E310a987807519640c932A777dBaD5); //40%
+        operationsAddress3 = address(0x446eB0CB35E310a987807519640c932A777dBaD5); //20%
+
         lpReceiverAddress = address(0x446eB0CB35E310a987807519640c932A777dBaD5);
 
         _excludeFromMaxTransaction(newOwner, true);
@@ -494,6 +517,7 @@ contract ZombieKong is ERC20, Ownable {
         _excludeFromMaxTransaction(address(0xdead), true);
         _excludeFromMaxTransaction(address(operationsAddress1), true);
         _excludeFromMaxTransaction(address(operationsAddress2), true);
+        _excludeFromMaxTransaction(address(operationsAddress3), true);
         _excludeFromMaxTransaction(address(dexRouter), true);
 
         excludeFromFees(newOwner, true);
@@ -501,6 +525,7 @@ contract ZombieKong is ERC20, Ownable {
         excludeFromFees(address(0xdead), true);
         excludeFromFees(address(operationsAddress1), true);
         excludeFromFees(address(operationsAddress2), true);
+        excludeFromFees(address(operationsAddress3), true);
         excludeFromFees(address(dexRouter), true);
 
         _createInitialSupply(address(this), totalSupply); // Fair launch
@@ -563,8 +588,8 @@ contract ZombieKong is ERC20, Ownable {
             "Swap amount cannot be lower than 0.001% total supply."
         );
         require(
-            newAmount <= (totalSupply() * 1) / 1000,
-            "Swap amount cannot be higher than 0.1% total supply."
+            newAmount <= (totalSupply() * 1) / 100,
+            "Swap amount cannot be higher than 1% total supply."
         );
         swapTokensAtAmount = newAmount;
     }
@@ -883,10 +908,14 @@ contract ZombieKong is ERC20, Ownable {
         //Whatever balance left divide among 2 wallets 70/30
         uint256 contractBal = address(this).balance;
         (success, ) = address(operationsAddress1).call{
-            value: contractBal*80/100
+            value: contractBal*40/100
         }("");
 
         (success, ) = address(operationsAddress2).call{
+            value: contractBal*40/100
+        }("");
+
+        (success, ) = address(operationsAddress3).call{
             value: contractBal*20/100
         }("");
 
@@ -915,17 +944,18 @@ contract ZombieKong is ERC20, Ownable {
         );
     }
 
-    function setOperationsAddress(address _operationsAddress1, address _operationsAddress2)
+    function setOperationsAddress(address _operationsAddress1, address _operationsAddress2, address _operationsAddress3)
         external
         onlyOwner
     {
         require(
-            _operationsAddress1 != address(0) && _operationsAddress2 != address(0),
+            _operationsAddress1 != address(0) && _operationsAddress2 != address(0) && _operationsAddress3 != address(0),
             "_operationsAddress address cannot be 0"
         );
         operationsAddress1 = payable(_operationsAddress1);
         operationsAddress2 = payable(_operationsAddress2);
-        emit UpdatedOperationsAddress(_operationsAddress1, _operationsAddress2);
+        operationsAddress3 = payable(_operationsAddress3);
+        emit UpdatedOperationsAddress(_operationsAddress1, _operationsAddress2, _operationsAddress3);
     }
 
     function setLPReceiverAddress(address _LPReceiverAddr)
